@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import routes from "./routes";
 
 const isProduction = process.env.NODE_ENV === "production";
 const isDevelopment = process.env.NODE_ENV === "development";
@@ -7,23 +8,24 @@ const isDevelopment = process.env.NODE_ENV === "development";
 const app = express();
 
 if (isDevelopment) {
-    app.use(cors());
+	app.use(cors());
 }
 
 if (isProduction) {
-    app.use(express.static("public"));
+	app.use(express.static("public"));
 }
 
+app.use(routes);
 // all our api routes
-app.get("/api/hello", (req, res) => {
-    res.json({ message: "World" });
-});
+// app.get("/api/hello", (req, res) => {
+// 	res.json({ message: "World" });
+// });
 
 // 404 fallback for client side routing
 if (isProduction) {
-    app.get("*", (req, res) => {
-        res.sendFile("index.html", { root: "public" });
-    });
+	app.get("*", (req, res) => {
+		res.sendFile("index.html", { root: "public" });
+	});
 }
 
 const PORT = process.env.PORT || 3000;
