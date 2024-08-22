@@ -2,6 +2,7 @@ import express from "express";
 
 import db from "../../db";
 import { IBaseBook } from "../../types";
+import tokenCheck from "../../middlewares/tokenCheck";
 
 const booksRouter = express.Router();
 
@@ -42,7 +43,7 @@ booksRouter.get("/:id", async (req, res) => {
 });
 
 //Create book
-booksRouter.post("/", async (req, res) => {
+booksRouter.post("/", tokenCheck, async (req, res) => {
 	const { title, author, price, category_id } = req.body;
 
 	if (!title || typeof title !== "string" || title.length > 150) {
@@ -70,10 +71,56 @@ booksRouter.post("/", async (req, res) => {
 
 		const book = await db.books.create(newBook);
 		const book_id = book.insertId;
-		res.status(200).json({ message: `Successfully created book with id of ${book_id}` });
+		res.status(200).json({ message: `Successfully created book with id of ${book_id}`, id: book_id });
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({ message: "Could not add that book to the database" });
+	}
+});
+booksRouter.put("/:id", tokenCheck, async (req, res) => {
+	const { title, author, price, category_id } = req.body;
+	const id = parseInt(req.params.id);
+
+	if (!title || typeof title !== "string" || title.length > 150) {
+		return res.status(400).json({ message: "Title must be a string and no longer than 150 characters" });
+	}
+
+	if (!author || typeof author !== "string" || author.length > 150) {
+		return res.status(400).json({ message: "Author must be a string and no longer than 150 characters" });
+	}
+
+	if (!price || typeof price !== "number") {
+		return res.status(400).json({ message: "Price must be a number" });
+	}
+	if (!category_id || typeof category_id !== "number") {
+		return res.status(400).json({ message: "Category ID must be a number" });
+	}
+
+	try {
+		const newBook: IBaseBook = {
+			title,
+			author,
+			price,
+			category_id,
+		};
+
+		await db.books.update(newBook, id);
+		res.status(200).json({ message: `Successfully updated a book with id of ${id}` });
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ message: "Could not update that book" });
+	}
+});
+
+booksRouter.delete("/:id", tokenCheck, async (req, res) => {
+	const id = parseInt(req.params.id);
+
+	try {
+		await db.books.destroy(id);
+		res.status(200).json({ message: `Successfully deleted book with the id ${id}` });
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ message: "Error could not get all books" });
 	}
 });
 
